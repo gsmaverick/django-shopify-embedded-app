@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+    <title>Embedded Shopify App</title>
+
+    <script src="https://unpkg.com/@shopify/app-bridge@3"></script>
+
+    <script>
+        window.AppConfiguration = {{ app_configuration|safe }};
+
+        const AppBridge = window["app-bridge"];
+        const app = AppBridge.createApp({
+            apiKey: AppConfiguration.apiKey,
+            host: new URLSearchParams(location.search).get("host"),
+            forceRedirect: true
+        });
+
+        document.addEventListener("DOMContentLoaded", function() {
+            const scopeChangesRequiredButton = document.getElementById(
+                "scopeChangesRequiredButton"
+            );
+            if (scopeChangesRequiredButton) {
+                scopeChangesRequiredButton.addEventListener("click", function() {
+                    const redirectUrl = new URL(
+                        `${app.localOrigin}/shopify/embedded_app/`
+                    );
+                    redirectUrl.searchParams.set("shop", AppConfiguration.shopDomain);
+                    redirectUrl.searchParams.set("updated_access_scopes_required", "1");
+
+                    const redirect = AppBridge.actions.Redirect.create(app);
+                    redirect.dispatch(
+                        AppBridge.actions.Redirect.Action.REMOTE,
+                        {url: redirectUrl.href}
+                    );
+                });
+            }
+
+            const loadProductsButton = document.getElementById("loadProductsButton");
+            if (loadProductsButton) {
+                loadProductsButton.addEventListener("click", function() {
+                    const fetch = AppBridge.utilities.authenticatedFetch(app);
+
+                    fetch("/shopify/api/products/")
+                        .then(function(response) { return response.json(); })
+                        .then(function(responseJson) {
+                            const items = responseJson.map(function(product) {
+                                const li = document.createElement("li");
+                                li.innerText = `${product.title} (ID: ${product.id})`;
+                                return li;
+                            });
+                            const productsList = document.getElementById(
+                                "productsList"
+                            );
+                            productsList.replaceChildren(...items);
+                        })
+                        .catch(function (error) {
+                            console.log("Error fetching products", error);
+                        });
+                });
+            }
+        });
+    </script>
+</head>
+
+<body>
+    {% if scope_changes_required %}
+        <div>
+            <h1>Django Embedded App requires updated permissions</h1>
+            <button id="scopeChangesRequiredButton">Update permissions</button>
+        </div>
+    {% else %}
+        <h1>Django Embedded App is installed!</h1>
+
+        <button id="loadProductsButton">Load Products</button>
+
+        <ul id="productsList"></ul>
+    {% endif %}
+</body>
+</html>

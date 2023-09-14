@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "django-shopify-embedded-app"
+version = "0.1.0"
+description = ""
+authors = ["Gavin Schulz <gavin.schulz@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+django = "^4.2.4"
+python-dotenv = "^1.0.0"
+shopifyapi = "^12.3.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
